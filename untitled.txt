@@ -1,0 +1,25 @@
+Description:
+
+Modifications:
+1. Poisson Models being loaded as functions using __init__.py for readability. Model for +2.5, H2H, and Next Leagues Model
+2. Orchestrator so it automatically runs every Tuesday at 1:00 am.
+3. Incorporate error handlings
+4. Find a way to incorporate different leagues that only have one general standings table
+
+
+Understat.com - EPL, LaLiga, Bundesliga, Serie A, Ligue 1, RFPL
+FBREF.com
+    https://fbref.com/en/comps/
+    - xG Data: Eredivsie, Bundesliga2, Jupiler (Belgium), Liga MX, Primeira Liga (Portugal), MLS, Brasileirao, Argentina
+    - non xG Data: Hungarian NB I, Romanian Liga I, Serbian Superliga, Turkish SuperLig, Ukranian Premier League, Polish Ekstraklasa, 
+                    Swedish Allsvenskan, Norwegian Eliteserien, Swiss Super League, Bulgarian First League (Maybe), Austrian Bundesliga, 
+                    Greek Super League, Czech First League, Croatian Football League, South Korean K League 1 (Calendar Year Round), Japan J1 League (Calendar
+                    Year Round), Saudi Professional League, Danish Super League, Some Female Leagues too
+
+
+
+Plan:
+Start with Scraping all leagues mentioned into one pipeline:
+    - Scraping Fixtures
+    - Scraping Standings
+        - Separate those with different formats.
