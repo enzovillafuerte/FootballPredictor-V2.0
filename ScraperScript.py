@@ -600,6 +600,7 @@ df_ou.to_csv(output_path, index=False)
 output_path = os.path.join(output_dir, f"H2H_Predictions_Official.csv")
 df_h2h.to_csv(output_path, index=False)
 
+# Uploading to github
 
 ''' 
 To-Dos:
