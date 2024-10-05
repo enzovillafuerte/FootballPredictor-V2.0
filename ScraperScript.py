@@ -381,7 +381,7 @@ for league, df in dfs_u.items():
             #print(" ")
 
             # Appending into dictionary
-            predictions_dict_h2h[league] = predictions
+            predictions_dict_h2h[league] = predictions_h2h
             print(f'Success H2H for {league}')
         
     except Exception as e:
@@ -516,7 +516,7 @@ for league, df in dfs.items():
             #print(" ")
 
             # Appending into dictionary
-            predictions_dict_h2h[league] = predictions
+            predictions_dict_h2h[league] = predictions_h2h
             print(f'Success H2H for {league}')
         
     except Exception as e:
@@ -547,7 +547,7 @@ for league, df in dfs.items():
                 #print(" ")
 
                 # Appending into dictionary
-                predictions_dict_h2h[league] = predictions
+                predictions_dict_h2h[league] = predictions_h2h
                 print(f'Success H2H for {league}')
                 
         except Exception as e:
