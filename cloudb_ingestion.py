@@ -7,6 +7,10 @@
 import pandas as pd
 import numpy as np
 import os
+from pydantic import BaseModel, condecimal, constr
+from datetime import datetime
+from typing import Optional
+from supabase import create_client, Client
 
 # Sample of last week's data (Should be official, but we'll use last week's since I ran the program today in the morning)
 
@@ -15,6 +19,7 @@ import os
 
 # Template with Over/Under
 df_ou = pd.read_csv('Predictions/OU_Predictions_09-20-2024.csv')
+## UNCOMMENT -> df_h2h = pd.read_csv('Predictions/H2H_Predictions_09-20-2024.csv')
 
 # fixtures_url
 
@@ -81,8 +86,15 @@ mapping = {
 # Apply mapping:
 df_ou = df_ou.replace({"home_team":mapping, "away_team":mapping})
 
-# Mergin on home_team and away team
+# keeping the needed columns
+# UNCOMMENT -> df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
+# UNCOMMENT -> df_h2h = df_h2h.replace({"home_team":mapping, "away_team":mapping})
+# UNCOMMENT -> df_ou = pd.merge(df_ou, df_h2h, on=['home_team', 'away_team'])
+
+# Merging on home_team and away team
 final_ou = pd.merge(df_ou, epl_results, on=['home_team', 'away_team'])
+
+
 
 #print(epl_results.head(10))
 #print(df_ou.iloc[10:20])
@@ -116,21 +128,117 @@ final_ou.loc[final_ou['g_h'] < final_ou['g_a'], ['WIN']] = 'A'
 final_ou.loc[final_ou['g_h'] == final_ou['g_a'], ['WIN']] = 'E'
 
 
-
-print(final_ou)
+# Displaying the final dataframe
+#print(final_ou)
 
 # Next steps: Merge H2H Home(%), Draw (%), Away(%) into final_ou 
 # create schema and load into supabase
 
 
 
-#### Loading into supabase section
+#### ------------ Loading into supabase section ------------
+
+# Handling in case there's null values. Changing to None just in case
+final_ou = final_ou.where(pd.notnull(final_ou), None)
+
+# Changing the column naming to lower case. Otherwise it might cause match errors with Supabase's schema definition
+final_ou.columns = final_ou.columns.str.lower()
+
+# Changing the column names appropiately to match the pydantic model and the schema generation at supabase
+final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5', 'r+1.5': 'r_1_5', 'r+2.5':'r_2_5', 'rh+1.5':'r_home_1_5', 'ra+1.5':'r_away_1_5'}, inplace=True) ## Add the H2H later
+
+# make sure all the datatypes make sense
+# print(final_ou.dtypes) -- They do
+
+# Creating pydantic model. Useful for validation as the datatypes in the df must match the schema types in Supabase
+class DataModel(BaseModel):
+    league: str
+    source: str
+    home_team: str
+    away_team: str
+    over_1_5: float 
+    over_2_5: float
+    over_3_5: float
+    home_over_1_5: float
+    away_over_1_5: float
+    #home (%): float -> uncomment later
+    #draw (%): float -> uncomment later
+    #away (%): float -> uncomment later
+    xg: float
+    score: str
+    xg_h: float
+    xg_a: float
+    actual_xg: float
+    g_h: int
+    g_a: int
+    total_goals: int
+    r_1_5: float
+    r_2_5: float
+    r_home_1_5: float
+    r_away_1_5: float
+    win: str
+
+# Running the validation
+for x in final_ou.to_dict(orient="records"):
+    try:
+        DataModel(**x).dict()
+        print('Successful Validation')
+
+    except Exception as e:
+        print(e)
+        break
+
 
 
 ## DB Information in Whatsapp for security reasons
+project_url = ''
+api_key = ''
 
+# creating supabase instance
+supabase = create_client(project_url, api_key)
+
+# Defining function for insertion
+def insert_records(df, supabase):
+
+    records = [
+        DataModel(**x).dict()
+        for x in df.to_dict(orient='records')
+    ]
+
+    # Upsert will work for inserting new rows and also update already existing ones based on primary key
+    # //// Table name as argument in function better ///
+    executing = supabase.table('name_table').upsert(records).execute() # we can also do batch, but it will not be needed in this case
+    print("Successful Insertion")
+
+# Inserting records
 
 '''
-CREATE TABLE invoices_script_test_2 (
-    id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
+CREATE TABLE predictions (
+    match_id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
+    league VARCHAR(20) NOT NULL,
+    source VARCHAR(10) NOT NULL,
+    home_team VARCHAR(30) NOT NULL,
+    away_team VARCHAR(30) NOT NULL,
+    over_1_5 FLOAT,
+    over_2_5 FLOAT,
+    over_3_5 FLOAT,
+    home_over_1_5 FLOAT,
+    away_over_1_5 FLOAT,
+    -- home (%) FLOAT,
+    -- draw (%) FLOAT,
+    -- away (%) FLOAT,
+    xg FLOAT,
+    score VARCHAR(10),
+    xg_h FLOAT,
+    xg_a FLOAT,
+    actual_xg FLOAT
+    g_h INT,
+    g_a INT,
+    total_goals INT,
+    r_1_5 FLOAT,
+    r_2_5 FLOAT,
+    r_home_1_5 FLOAT,
+    r_away_1_5 FLOAT,
+    win VARCHAR(5),
+    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Automatically populating the ingestion_date
 '''
