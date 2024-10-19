@@ -143,6 +143,14 @@ mapping = {
 # Apply mapping:
 all_dfs = all_dfs.replace({"home_team":mapping, "away_team":mapping})
 
+# Adding needed columns (workaround for H2H data)
+all_dfs[['home_h2h', 'draw_h2h', 'away_h2h']] = None
+'''
+final_list of columns in order fo reference: ['league', 'Source', 'home_team', 'away_team', '+1.5(%)', '+2.5(%)',
+       '+3.5(%)', 'H+1.5(%)', 'A+1.5(%)', 'xG', 'home_h2h', 'draw_h2h',
+       'away_h2h']
+'''
+
 # ------- Part 3 - Running the Scraper
 # IDEALLY WE INCORPORATE THIS FUNCTION WITHIN THE MODULE FOLDER, keep it here for now
 
@@ -175,26 +183,70 @@ def past_fixtures_scraper(url):
 results_data = {}
 
 for league, url in fixtures_url.items():
-    key = f'{league} Results'
+    key = f'{league}'
     try:
         results_data[key] = past_fixtures_scraper(url)
         print(f'Success: Results for {league}')
     except Exception as e:
         print(f'Failed to scrape {league} results: {e}')
         continue
-    time.sleep(5)
+    time.sleep(10)
 
 
 
+# Consolidating all the data in the dictionary into one dataframe
+# Beware that the key is the league, the value is a dataframe
+results_consolidated = []
 
-# Add columns needed for supabase ingestion (H2H related ones)
-# Fixtures URL - Similar to ScraperScript
-#print(fixtures_url)
+for league, df in results_data.items():
+    df['League'] = league # adding a new column for the league
+    results_consolidated.append(df)
+
+# it creates a list with sublists
+# concatenating all the DataFrames within the sublists/list into a single DataFrame
+results_c_df = pd.concat(results_consolidated, ignore_index=True)
+
+# Test before here
+# ------- Part 4 - Merging Dataframes
+# merge the final results dataframe with the predictions data
+final_ou = pd.merge(all_dfs, results_c_df, on=['home_team', 'away_team'])
 
 
+# ------- Part 5 - Further Transformations & New Variables Section
+# We want to: 
+#           1. Get the total goals and see if +1.5 o +2.5 ratio
+#           2. Get who won - Later
 
-#print(all_dfs)
-print(results_data)
-print('all good')
+final_ou['g_h'] = final_ou['score'].str.split('–').str[0].astype(int)
+final_ou['g_a'] = final_ou['score'].str.split('–').str[1].astype(int)
+final_ou['total_goals'] = final_ou['g_h'] + final_ou['g_a']
+#final_ou['R+1.5'] = final_ou['total_goals'].apply()
+
+# Assigning values for over and under and winner
+# Overall  O/U
+final_ou.loc[final_ou['total_goals'] > 2.5, ['R+1.5', 'R+2.5']] = [1, 1]
+final_ou.loc[(final_ou['total_goals'] > 1.5) & (final_ou['total_goals'] <= 2.5), ['R+1.5', 'R+2.5']] = [1, 0]
+final_ou.loc[final_ou['total_goals'] <= 1.5, ['R+1.5', 'R+2.5']] = [0, 0]
+
+# Ind O/U
+final_ou.loc[final_ou['g_h'] > 1.5, ['RH+1.5']] = 1
+final_ou.loc[final_ou['g_h'] < 1.5, ['RH+1.5']] = 0
+final_ou.loc[final_ou['g_a'] > 1.5, ['RA+1.5']] = 1
+final_ou.loc[final_ou['g_a'] < 1.5, ['RA+1.5']] = 0
+
+# Overall H2H
+final_ou.loc[final_ou['g_h'] > final_ou['g_a'], ['WIN']] = 'H'
+final_ou.loc[final_ou['g_h'] < final_ou['g_a'], ['WIN']] = 'A'
+final_ou.loc[final_ou['g_h'] == final_ou['g_a'], ['WIN']] = 'E'
+
+
+# Displaying the final dataframe
+print(final_ou)
+
+# ------- Part 6 - Database Injection
+
+#print(all_dfs.columns)
+#print(results_c_df)
+#print('all good')
 # Running program
 # python cloudingestion_historical.py
