@@ -250,3 +250,7 @@ print(final_ou)
 #print('all good')
 # Running program
 # python cloudingestion_historical.py
+
+# Everything in PowerBI
+# Also add predictions there with None values for the scores 
+# Using upsert so it updates itself later when ingesting into supabase.
