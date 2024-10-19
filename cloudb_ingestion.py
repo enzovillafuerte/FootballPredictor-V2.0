@@ -50,6 +50,8 @@ def past_fixtures_scraper(url):
     # retrieving only last 20 games for efficiency - Change it to 10 later
     return df.tail(20)
 
+
+# change this to scrape for all leagues
 epl_results = past_fixtures_scraper("https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures")
 
 
