@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Optional
 from supabase import create_client, Client
 import json
+import time
+
 #from ScraperScript import fixtures_url
 
 # -------------- HISTORICAL LOAD --------------
@@ -95,9 +97,6 @@ with open(filename, 'w') as json_file:
 
 # ------- Part 2 - Consolidating Historical Predictions into One Dataframe
 
-
-
-
 # 1. loading datasets
 df1 = pd.read_csv('Predictions/OU_Predictions_09-01-2024.csv')
 df2 = pd.read_csv('Predictions/OU_Predictions_09-02-2024.csv')
@@ -118,8 +117,34 @@ all_dfs = all_dfs.drop_duplicates(subset=['league', 'Source', 'home_team', 'away
 # length before removing: 2188 x 10
 # length after removing: 958 x 10 - PERFECT
 
+# Mapping so the names from understat match with the fixtures ones
+mapping = {
+    # La Liga: 
+    'Alaves': 'Alavés', 'Real Valladolid': 'Valladolid', 'Real Betis':'Betis', 'Leganes':'Leganés', 
+    'Atletico Madrid':'Atlético Madrid',
+  
+    # EPL 
+    'Leicester':'Leicester City', 'Wolverhampton Wanderers':'Wolves', 'Ipswich':'Ipswich Town',
+     'Manchester United':'Manchester Utd', 'Nottingham Forest':"Nott'ham Forest",
+    
+    # Bundesliga
+    'FC Heidenheim':'Heidenheim', 'Eintracht Frankfurt':'Eint Frankfurt', 'Bayer Leverkusen':'Leverkusen', 
+    'VfB Stuttgart':'Stuttgart', 'Borussia M.Gladbach':'Gladbach', 'Borussia Dortmund':'Dortmund', 
+    'RasenBallsport Leipzig':'RB Leipzig',
 
-# 2. Running Scraper - IDEALLY WE INCORPORATE THIS FUNCTION WITHIN THE MODULE FOLDER, keep it here for now
+    # Serie A
+    'Verona': 'Hellas Verona', 'Parma Calcio 1913':'Parma', 'AC Milan':'Milan',
+
+    # Ligue 1
+    'Saint-Etienne':'Saint-Étienne', 'Paris Saint Germain': 'Paris S-G'
+
+}
+
+# Apply mapping:
+all_dfs = all_dfs.replace({"home_team":mapping, "away_team":mapping})
+
+# ------- Part 3 - Running the Scraper
+# IDEALLY WE INCORPORATE THIS FUNCTION WITHIN THE MODULE FOLDER, keep it here for now
 
 # Function for scraping fixtures from fbref.com
 def past_fixtures_scraper(url):
@@ -134,20 +159,34 @@ def past_fixtures_scraper(url):
     df = df[df['Match Report'] == 'Match Report']
     
     # keep only home and away columns
-    df = df[['Home', 'Away', 'Score', 'xG', 'xG.1']]
+    df = df[['Home', 'Away', 'Score']] # Keeping xG and xG.1 out since most leagues don't have it
     df.reset_index(drop=True,inplace=True)
     
     # change name to home_team and away_team
-    df.columns = ['home_team', 'away_team', 'score', 'xg_h', 'xg_a']
+    df.columns = ['home_team', 'away_team', 'score'] #, 'xg_h', 'xg_a']
 
     # add total_xG
-    df['actual_xg'] = df['xg_h'] + df['xg_a']
+    # df['actual_xg'] = df['xg_h'] + df['xg_a']
     
-    # retrieving only last 20 games for efficiency - Change it to 10 later
     return df
 
 
-# 2. run the scraper for results and the merge
+# Scrapping the data and store in new dictionary - will take a while and could be heavy
+results_data = {}
+
+for league, url in fixtures_url.items():
+    key = f'{league} Results'
+    try:
+        results_data[key] = past_fixtures_scraper(url)
+        print(f'Success: Results for {league}')
+    except Exception as e:
+        print(f'Failed to scrape {league} results: {e}')
+        continue
+    time.sleep(5)
+
+
+
+
 # Add columns needed for supabase ingestion (H2H related ones)
 # Fixtures URL - Similar to ScraperScript
 #print(fixtures_url)
@@ -155,7 +194,7 @@ def past_fixtures_scraper(url):
 
 
 #print(all_dfs)
-
-
+print(results_data)
+print('all good')
 # Running program
 # python cloudingestion_historical.py

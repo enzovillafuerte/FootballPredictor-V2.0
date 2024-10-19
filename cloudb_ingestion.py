@@ -60,11 +60,12 @@ epl_results = past_fixtures_scraper("https://fbref.com/en/comps/9/schedule/Premi
 
 mapping = {
     # La Liga: 
+    'Alaves': 'Alavés', 'Real Valladolid': 'Valladolid', 'Real Betis':'Betis', 'Leganes':'Leganés', 'Atletico Madrid':'Atlético Madrid',
     #'Alaves', 'Real Valladolid', 'Osasuna', 'Valencia', 'Real Madrid', 'Getafe', 'Athletic Club', 'Villarreal', 'Rayo Vallecano', 'Real Betis',
     #'Sevilla', 'Real Sociedad', 'Las Palmas', 'Girona', 'Espanyol', 'Leganes', 'Celta Vigo', 'Barcelona', 'Atletico Madrid', 'Mallorca',
 
     # EPL 
-    'Leicester':'Leicester City', 'Wolverhampton Wanderers':'Wolves', 'Ipswich':'Ipswich Town', 'Manchester United':'Manchester Utd', 'Nottingham Forest':"Nott'ham Forest"
+    'Leicester':'Leicester City', 'Wolverhampton Wanderers':'Wolves', 'Ipswich':'Ipswich Town', 'Manchester United':'Manchester Utd', 'Nottingham Forest':"Nott'ham Forest",
     
     
     #'West Ham', 'Aston Villa', 'Fulham',  'Liverpool', 'Southampton', 'Tottenham', 'Crystal Palace', 'Brighton', 'Manchester City',
@@ -72,14 +73,19 @@ mapping = {
     #'Brentford',   'Arsenal',
 
     # Bundesliga
+    'FC Heidenheim':'Heidenheim', 'Eintracht Frankfurt':'Eint Frankfurt', 'Bayer Leverkusen':'Leverkusen', 'VfB Stuttgart':'Stuttgart', 
+    'Borussia M.Gladbach':'Gladbach', 'Borussia Dortmund':'Dortmund', 'RasenBallsport Leipzig':'RB Leipzig',
     #'Augsburg', 'FC Heidenheim', 'Werder Bremen', 'Union Berlin', 'Bochum', 'Eintracht Frankfurt', 'Bayer Leverkusen', 'VfB Stuttgart', 'St. Pauli',
     #'Mainz 05', 'Freiburg', 'Bayern Munich', 'Hoffenheim', 'Holstein Kiel', 'Borussia M.Gladbach', 'Wolfsburg', 'Borussia Dortmund', 'RasenBallsport Leipzig',
 
     # Serie A
+    'Verona': 'Hellas Verona', 'Parma Calcio 1913':'Parma', 'AC Milan':'Milan',
+
     #'Cagliari', 'Verona', 'Venezia', 'Juventus', 'Lecce', 'Fiorentina', 'Monza', 'Roma', 'Inter', 'Atalanta',
     #'Empoli', 'Torino', 'Genoa', 'Napoli', 'Parma Calcio 1913', 'Lazio', 'Bologna', 'Udinese', 'AC Milan', 'Como',
 
     # Ligue 1
+    'Saint-Etienne':'Saint-Étienne', 'Paris Saint Germain': 'Paris S-G'
     #'Nice', 'Lille', 'Rennes', 'Reims', 'Monaco', 'Brest', 'Angers', 'Montpellier', 'Lyon',
     #'Saint-Etienne', 'Strasbourg', 'Lens', 'Paris Saint Germain', 'Le Havre', 'Toulouse', 'Nantes', 'Auxerre', 'Marseille'
 
