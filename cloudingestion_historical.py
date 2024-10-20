@@ -326,7 +326,20 @@ def insert_records(df, supabase):
 insert_records(final_ou, supabase)
 
 
-
+'''
+ERROR MESSAGE:
+/Users/enzovillafuerte/Documents/GitHub/FootballPredictor-V2.0/cloudingestion_historical.py:295: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+  DataModel(**x).dict()
+2024-10-20 01:09:02,755:INFO - HTTP Request: POST https://qzyklxzvjikqnoqcjdvx.supabase.co/rest/v1/predictions_results "HTTP/1.1 400 Bad Request"
+Traceback (most recent call last):
+  File "/Users/enzovillafuerte/Documents/GitHub/FootballPredictor-V2.0/cloudingestion_historical.py", line 326, in <module>
+    insert_records(final_ou, supabase)
+  File "/Users/enzovillafuerte/Documents/GitHub/FootballPredictor-V2.0/cloudingestion_historical.py", line 322, in insert_records
+    executing = supabase.table('predictions_results').upsert(records).execute() # we can also do batch, but it will not be needed in this case
+  File "/Users/enzovillafuerte/opt/anaconda3/lib/python3.9/site-packages/postgrest/_sync/request_builder.py", line 70, in execute
+    raise APIError(r.json())
+postgrest.exceptions.APIError: {'code': 'PGRST102', 'details': None, 'hint': None, 'message': 'Empty or invalid json'}
+'''
 #print(all_dfs.columns)
 #print(results_c_df)
 #print('all good')
