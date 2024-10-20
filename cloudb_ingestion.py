@@ -221,7 +221,7 @@ def insert_records(df, supabase):
 # Inserting records
 
 '''
-CREATE TABLE predictions (
+CREATE TABLE predictions_results (
     match_id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
     league VARCHAR(20) NOT NULL,
     source VARCHAR(10) NOT NULL,
@@ -232,14 +232,14 @@ CREATE TABLE predictions (
     over_3_5 FLOAT,
     home_over_1_5 FLOAT,
     away_over_1_5 FLOAT,
-    -- home (%) FLOAT,
-    -- draw (%) FLOAT,
-    -- away (%) FLOAT,
+    home_h2h FLOAT,
+    draw_h2h FLOAT,
+    away_h2h FLOAT,
     xg FLOAT,
     score VARCHAR(10),
-    xg_h FLOAT,
-    xg_a FLOAT,
-    actual_xg FLOAT
+    -- xg_h FLOAT, (not anymore)
+    -- xg_a FLOAT, (not anymore)
+    -- actual_xg FLOAT (not anymore)
     g_h INT,
     g_a INT,
     total_goals INT,

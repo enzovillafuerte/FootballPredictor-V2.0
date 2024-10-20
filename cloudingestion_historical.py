@@ -211,6 +211,9 @@ results_c_df = pd.concat(results_consolidated, ignore_index=True)
 # merge the final results dataframe with the predictions data
 final_ou = pd.merge(all_dfs, results_c_df, on=['home_team', 'away_team'])
 
+# getting rid of 'League' column as it is redundant
+final_ou = final_ou.drop(columns=['League'])
+
 
 # ------- Part 5 - Further Transformations & New Variables Section
 # We want to: 
@@ -244,6 +247,85 @@ final_ou.loc[final_ou['g_h'] == final_ou['g_a'], ['WIN']] = 'E'
 print(final_ou)
 
 # ------- Part 6 - Database Injection
+
+# Handling in case there's null values. Changing to None just in case
+final_ou = final_ou.where(pd.notnull(final_ou), None)
+
+# Changing the column naming to lower case. Otherwise it might cause match errors with Supabase's schema definition
+final_ou.columns = final_ou.columns.str.lower()
+
+# Changing the column names appropiately to match the pydantic model and the schema generation at supabase
+final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5', 'r+1.5': 'r_1_5', 'r+2.5':'r_2_5', 'rh+1.5':'r_home_1_5', 'ra+1.5':'r_away_1_5'}, inplace=True) ## Add the H2H later
+
+# Export into CSV
+final_ou.to_csv('HistoricalLoadRecords.csv', index=False)
+
+# Creating pydantic model. Useful for validation as the datatypes in the df must match the schema types in Supabase
+class DataModel(BaseModel):
+    league: str
+    source: str
+    home_team: str
+    away_team: str
+    over_1_5: float 
+    over_2_5: float
+    over_3_5: float
+    home_over_1_5: float
+    away_over_1_5: float
+    home_h2h: Optional[float]
+    draw_h2h: Optional[float]
+    away_h2h: Optional[float] 
+    xg: float
+    score: str
+    #xg_h: float
+    #xg_a: float
+    #actual_xg: float
+    g_h: int
+    g_a: int
+    total_goals: int
+    r_1_5: float
+    r_2_5: float
+    r_home_1_5: float
+    r_away_1_5: float
+    win: str
+
+
+# Running the validation
+for x in final_ou.to_dict(orient="records"):
+    try:
+        DataModel(**x).dict()
+        #print('Successful Validation')
+
+    except Exception as e:
+        print(e)
+        break
+
+## DB Information in Whatsapp for security reasons
+project_url = ''
+api_key = ''
+
+'''
+The insertion is not working
+'''
+# creating supabase instance
+supabase = create_client(project_url, api_key)
+
+# Defining function for insertion
+def insert_records(df, supabase):
+
+    records = [
+        DataModel(**x).model_dump()
+        for x in df.to_dict(orient='records')
+    ]
+
+    # Upsert will work for inserting new rows and also update already existing ones based on primary key
+    # //// Table name as argument in function better ///
+    executing = supabase.table('predictions_results').upsert(records).execute() # we can also do batch, but it will not be needed in this case
+    print("Successful Insertion")
+
+# Inserting records
+insert_records(final_ou, supabase)
+
+
 
 #print(all_dfs.columns)
 #print(results_c_df)
