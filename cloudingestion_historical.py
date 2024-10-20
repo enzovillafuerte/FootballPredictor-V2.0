@@ -266,19 +266,16 @@ class DataModel(BaseModel):
     source: str
     home_team: str
     away_team: str
-    over_1_5: float 
+    over_1_5: float
     over_2_5: float
     over_3_5: float
     home_over_1_5: float
     away_over_1_5: float
-    home_h2h: Optional[float]
+    xg: Optional[float]  # Assuming this column could have missing values based on the subset
+    home_h2h: Optional[float]  # Assuming these columns are missing in the current subset but may be present in full
     draw_h2h: Optional[float]
-    away_h2h: Optional[float] 
-    xg: float
+    away_h2h: Optional[float]
     score: str
-    #xg_h: float
-    #xg_a: float
-    #actual_xg: float
     g_h: int
     g_a: int
     total_goals: int
@@ -327,7 +324,7 @@ insert_records(final_ou, supabase)
 
 
 '''
-ERROR MESSAGE:
+ERROR MESSAGE: Need Batch 
 /Users/enzovillafuerte/Documents/GitHub/FootballPredictor-V2.0/cloudingestion_historical.py:295: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
   DataModel(**x).dict()
 2024-10-20 01:09:02,755:INFO - HTTP Request: POST https://qzyklxzvjikqnoqcjdvx.supabase.co/rest/v1/predictions_results "HTTP/1.1 400 Bad Request"

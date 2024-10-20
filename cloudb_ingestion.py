@@ -18,8 +18,8 @@ from supabase import create_client, Client
 #df_h2h = pd.read_csv('/Predictions/OU_Predictions_Official.csv') # - uncomment when ready
 
 # Template with Over/Under
-df_ou = pd.read_csv('Predictions/OU_Predictions_09-20-2024.csv')
-## UNCOMMENT -> df_h2h = pd.read_csv('Predictions/H2H_Predictions_09-20-2024.csv')
+df_ou = pd.read_csv('Predictions/OU_Predictions_10-07-2024.csv')
+df_h2h = pd.read_csv('Predictions/H2H_Predictions_10-07-2024.csv')
 
 # fixtures_url
 
@@ -95,9 +95,9 @@ mapping = {
 df_ou = df_ou.replace({"home_team":mapping, "away_team":mapping})
 
 # keeping the needed columns
-# UNCOMMENT -> df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
-# UNCOMMENT -> df_h2h = df_h2h.replace({"home_team":mapping, "away_team":mapping})
-# UNCOMMENT -> df_ou = pd.merge(df_ou, df_h2h, on=['home_team', 'away_team'])
+df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
+df_h2h = df_h2h.replace({"home_team":mapping, "away_team":mapping})
+df_ou = pd.merge(df_ou, df_h2h, on=['home_team', 'away_team'])
 
 # Merging on home_team and away team
 final_ou = pd.merge(df_ou, epl_results, on=['home_team', 'away_team'])
@@ -153,7 +153,11 @@ final_ou = final_ou.where(pd.notnull(final_ou), None)
 final_ou.columns = final_ou.columns.str.lower()
 
 # Changing the column names appropiately to match the pydantic model and the schema generation at supabase
-final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5', 'r+1.5': 'r_1_5', 'r+2.5':'r_2_5', 'rh+1.5':'r_home_1_5', 'ra+1.5':'r_away_1_5'}, inplace=True) ## Add the H2H later
+final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 
+'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5',
+'home (%)':'home_h2h', 'draw (%)':'draw_h2h', 'away (%)':'away_h2h',
+'r+1.5': 'r_1_5', 'r+2.5':'r_2_5', 
+'rh+1.5':'r_home_1_5', 'ra+1.5':'r_away_1_5'}, inplace=True) ## Add the H2H later
 
 # make sure all the datatypes make sense
 # print(final_ou.dtypes) -- They do
@@ -164,19 +168,16 @@ class DataModel(BaseModel):
     source: str
     home_team: str
     away_team: str
-    over_1_5: float 
+    over_1_5: float
     over_2_5: float
     over_3_5: float
     home_over_1_5: float
     away_over_1_5: float
-    #home (%): float -> uncomment later
-    #draw (%): float -> uncomment later
-    #away (%): float -> uncomment later
-    xg: float
+    xg: Optional[float]  # Assuming this column could have missing values based on the subset
+    home_h2h: Optional[float]  # Assuming these columns are missing in the current subset but may be present in full
+    draw_h2h: Optional[float]
+    away_h2h: Optional[float]
     score: str
-    xg_h: float
-    xg_a: float
-    actual_xg: float
     g_h: int
     g_a: int
     total_goals: int
@@ -195,6 +196,8 @@ for x in final_ou.to_dict(orient="records"):
     except Exception as e:
         print(e)
         break
+
+print(final_ou)
 
 
 
@@ -215,13 +218,18 @@ def insert_records(df, supabase):
 
     # Upsert will work for inserting new rows and also update already existing ones based on primary key
     # //// Table name as argument in function better ///
-    executing = supabase.table('name_table').upsert(records).execute() # we can also do batch, but it will not be needed in this case
+    executing = supabase.table('predictions_results_o').upsert(records).execute() # we can also do batch, but it will not be needed in this case
     print("Successful Insertion")
 
 # Inserting records
+insert_records(final_ou, supabase)
 
+
+# FINAL STEPS: INCLUDE ALL LEAGUES NOT ONLY PREMIER. FOLLOW METHODOLOGY FROM HISTORICAL LOAD
+# python cloudb_ingestion.py
 '''
-CREATE TABLE predictions_results (
+
+CREATE TABLE predictions_results_o (
     match_id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
     league VARCHAR(20) NOT NULL,
     source VARCHAR(10) NOT NULL,
@@ -237,9 +245,9 @@ CREATE TABLE predictions_results (
     away_h2h FLOAT,
     xg FLOAT,
     score VARCHAR(10),
-    -- xg_h FLOAT, (not anymore)
-    -- xg_a FLOAT, (not anymore)
-    -- actual_xg FLOAT (not anymore)
+    --xg_h FLOAT,
+    --xg_a FLOAT,
+    --actual_xg FLOAT
     g_h INT,
     g_a INT,
     total_goals INT,
@@ -248,5 +256,6 @@ CREATE TABLE predictions_results (
     r_home_1_5 FLOAT,
     r_away_1_5 FLOAT,
     win VARCHAR(5),
-    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Automatically populating the ingestion_date
+    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Automatically populating the 
+)
 '''
