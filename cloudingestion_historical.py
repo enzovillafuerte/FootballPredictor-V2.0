@@ -144,7 +144,7 @@ mapping = {
 all_dfs = all_dfs.replace({"home_team":mapping, "away_team":mapping})
 
 # Adding needed columns (workaround for H2H data)
-all_dfs[['home_h2h', 'draw_h2h', 'away_h2h']] = None
+all_dfs[['home_h2h', 'draw_h2h', 'away_h2h']] = 0.00
 '''
 final_list of columns in order fo reference: ['league', 'Source', 'home_team', 'away_team', '+1.5(%)', '+2.5(%)',
        '+3.5(%)', 'H+1.5(%)', 'A+1.5(%)', 'xG', 'home_h2h', 'draw_h2h',
