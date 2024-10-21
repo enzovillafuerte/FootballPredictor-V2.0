@@ -11,49 +11,24 @@ from pydantic import BaseModel, condecimal, constr
 from datetime import datetime
 from typing import Optional
 from supabase import create_client, Client
+import json
+import time
+
+# -------------- INCREMENTAL LOAD --------------
+
+# ------- Part 1 - Consolidating Needed O/U & H2H Dataframes into One
 
 # Sample of last week's data (Should be official, but we'll use last week's since I ran the program today in the morning)
 
-#df_ou = pd.read_csv('/Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
-#df_h2h = pd.read_csv('/Predictions/OU_Predictions_Official.csv') # - uncomment when ready
+df_ou = pd.read_csv('Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
+df_h2h = pd.read_csv('Predictions/OU_Predictions_Official.csv') # - uncomment when ready
 
-# Template with Over/Under
-df_ou = pd.read_csv('Predictions/OU_Predictions_10-07-2024.csv')
-df_h2h = pd.read_csv('Predictions/H2H_Predictions_10-07-2024.csv')
+# change column names to lowercase to avoid problems
+df_ou.columns = df_ou.columns.str.lower()
+df_h2h.columns = df_h2h.columns.str.lower()
 
-# fixtures_url
-
-
-
-# Function for scraping fixtures from fbref.com
-def past_fixtures_scraper(url):
-    
-    df = pd.read_html(url)
-    df = df[0]
-
-    # deleting rows with null values in a specific column
-    df.dropna(subset=['Wk'], inplace=True)
-
-    # Only getting rows with Match Report (Has passed already)
-    df = df[df['Match Report'] == 'Match Report']
-    
-    # keep only home and away columns
-    df = df[['Home', 'Away', 'Score', 'xG', 'xG.1']]
-    df.reset_index(drop=True,inplace=True)
-    
-    # change name to home_team and away_team
-    df.columns = ['home_team', 'away_team', 'score', 'xg_h', 'xg_a']
-
-    # add total_xG
-    df['actual_xg'] = df['xg_h'] + df['xg_a']
-    
-    # retrieving only last 20 games for efficiency - Change it to 10 later
-    return df.tail(20)
-
-
-# change this to scrape for all leagues
-epl_results = past_fixtures_scraper("https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures")
-
+# Do the merging of O/U and H2H into one consolidated dataframe
+df_ou = pd.merge(df_h2h, df_ou, on=['league','home_team', 'away_team', 'source'])
 
 # Mapping for understat values to match with fbref.com fixtures
 # Still need to do for other leagues but premier
@@ -94,13 +69,96 @@ mapping = {
 # Apply mapping:
 df_ou = df_ou.replace({"home_team":mapping, "away_team":mapping})
 
+
+# print(df_ou.head())
+# Template with Over/Under
+#df_ou = pd.read_csv('Predictions/OU_Predictions_10-07-2024.csv')
+#df_h2h = pd.read_csv('Predictions/H2H_Predictions_10-07-2024.csv')
+
+# ------- Part 2 - Scraping Fixtures Results from FBref.com
+
+# Importing the fixtures_url.json created in Historical Load
+filename = 'fixtures_url.json'
+
+with open(filename, 'r') as json_file:
+    fixtures_url = json.load(json_file)
+
+# TESTING: Extract the first 5 keys along with their values for TESTING
+# fixtures_url = {k: fixtures_url[k] for k in list(fixtures_url.keys())[:5]}
+
+
+# Function for scraping fixtures from fbref.com
+def past_fixtures_scraper(url):
+    
+    df = pd.read_html(url)
+    df = df[0]
+
+    # deleting rows with null values in a specific column
+    df.dropna(subset=['Wk'], inplace=True)
+
+    # Only getting rows with Match Report (Has passed already)
+    df = df[df['Match Report'] == 'Match Report']
+    
+    # keep only home and away columns
+    df = df[['Home', 'Away', 'Score']]
+    df.reset_index(drop=True,inplace=True)
+    
+    # change name to home_team and away_team
+    df.columns = ['home_team', 'away_team', 'score']
+
+    # add total_xG
+    # df['actual_xg'] = df['xg_h'] + df['xg_a']
+    
+    # retrieving only last 20 games for efficiency - Change it to 10 later
+    return df.tail(12)
+
+
+# change this to scrape for all leagues
+# epl_results = past_fixtures_scraper("https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures")
+
+# Scrapping the data and store it in new dictionary\
+results_data = {}
+
+for league, url in fixtures_url.items():
+    key = f'{league}'
+    try:
+        results_data[key] = past_fixtures_scraper(url)
+        print(f'Success: Results for {league}')
+    except Exception as e:
+        print(f'Failed to scrape {league} results: {e}')
+        continue
+    time.sleep(10)
+
+# Consolidating all the data in the dictionary into one dataframe
+# Beware that the key is the league, the value is a dataframe
+results_consolidated = []
+
+for league, df in results_data.items():
+    df['League'] = league # adding a new column for the league
+    results_consolidated.append(df)
+
+# it creates a list with sublists
+# concatenating all the DataFrames within the sublists/list into a single DataFrame
+results_c_df = pd.concat(results_consolidated, ignore_index=True)
+
+# Test before here
+# ------- Part 3 - Merging Prediction and Results dataframes
+
+# merge the final results dataframe with the predictions data
+final_ou = pd.merge(df_ou, results_c_df, on=['home_team', 'away_team'])
+
+# getting rid of 'League' column as it is redundant
+final_ou = final_ou.drop(columns=['League'])
+
+
+
 # keeping the needed columns
-df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
-df_h2h = df_h2h.replace({"home_team":mapping, "away_team":mapping})
-df_ou = pd.merge(df_ou, df_h2h, on=['home_team', 'away_team'])
+# df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
+# df_h2h = df_h2h.replace({"home_team":mapping, "away_team":mapping})
+# df_ou = pd.merge(df_ou, df_h2h, on=['home_team', 'away_team'])
 
 # Merging on home_team and away team
-final_ou = pd.merge(df_ou, epl_results, on=['home_team', 'away_team'])
+# final_ou = pd.merge(df_ou, epl_results, on=['home_team', 'away_team'])
 
 
 
@@ -202,8 +260,8 @@ print(final_ou)
 
 
 ## DB Information in Whatsapp for security reasons
-project_url = ''
-api_key = ''
+project_url = 'https://qzyklxzvjikqnoqcjdvx.supabase.co'
+api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6eWtseHp2amlrcW5vcWNqZHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgxNTU4ODcsImV4cCI6MjA0MzczMTg4N30.2U_lTkLdbv3LFkWAIbF6HYIFyVF2NQkeXRM783nNagw'
 
 # creating supabase instance
 supabase = create_client(project_url, api_key)
