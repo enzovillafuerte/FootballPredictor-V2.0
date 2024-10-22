@@ -84,7 +84,7 @@ with open(filename, 'r') as json_file:
     fixtures_url = json.load(json_file)
 
 # TESTING: Extract the first 5 keys along with their values for TESTING
-# fixtures_url = {k: fixtures_url[k] for k in list(fixtures_url.keys())[:5]}
+#fixtures_url = {k: fixtures_url[k] for k in list(fixtures_url.keys())[1:2]}
 
 
 # Function for scraping fixtures from fbref.com
@@ -150,7 +150,8 @@ final_ou = pd.merge(df_ou, results_c_df, on=['home_team', 'away_team'])
 # getting rid of 'League' column as it is redundant
 final_ou = final_ou.drop(columns=['League'])
 
-
+# remove duplicated records that may exist
+final_ou = final_ou.drop_duplicates(subset=['league', 'source', 'home_team', 'away_team'], keep='first')
 
 # keeping the needed columns
 # df_h2h = df_h2h[['home_team' , 'away_team' , 'Home (%)', 'Draw (%)', 'Away (%)']]
@@ -267,20 +268,62 @@ api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 supabase = create_client(project_url, api_key)
 
 # Defining function for insertion
+
 def insert_records(df, supabase):
 
     records = [
-        DataModel(**x).dict()
+        DataModel(**x).model_dump()
         for x in df.to_dict(orient='records')
     ]
 
     # Upsert will work for inserting new rows and also update already existing ones based on primary key
     # //// Table name as argument in function better ///
-    executing = supabase.table('predictions_results_o').upsert(records).execute() # we can also do batch, but it will not be needed in this case
+    executing = supabase.table('predictions_results_f').upsert(records).execute() #\
+            #.upsert(records, on_conflict=['league', 'source', 'home_team', 'away_team']).execute() # we can also do batch, but it will not be needed in this case'''
+    
+
     print("Successful Insertion")
 
 # Inserting records
 insert_records(final_ou, supabase)
+
+# Code for Updating Records - Upserting not working
+def update_records(df, supabase):
+    if df.empty:
+        print("No records to update. The DataFrame is empty.")
+        return  # Exit the function early if there are no records to update
+
+    for index, row in df.iterrows():
+        record_to_update = {
+            'league': row['league'],
+            'source': row['source'],
+            'home_team': row['home_team'],
+            'away_team': row['away_team'],
+            # Add other fields you want to update
+            'over_1_5': row['over_1_5'],
+            'over_2_5': row['over_2_5'],
+            'over_3_5': row['over_3_5'],
+            # Include other fields as necessary...
+        }
+
+        # Update the record based on league, source, home_team, and away_team
+        executing = supabase.table('predictions_results_f')\
+            .update(record_to_update)\
+            .eq('league', row['league'])\
+            .eq('source', row['source'])\
+            .eq('home_team', row['home_team'])\
+            .eq('away_team', row['away_team'])\
+            .execute()
+
+    print('Successful Update')
+
+        #if executing.status_code == 200:
+        #    print(f"Successfully updated record for {row['home_team']} vs {row['away_team']}")
+        #else:
+        #    print(f"Error updating record: {executing.error}, Status: {executing.status_code}")
+
+# Updating records
+# update_records(final_ou, supabase) # WORKING!
 
 
 # FINAL STEPS: INCLUDE ALL LEAGUES NOT ONLY PREMIER. FOLLOW METHODOLOGY FROM HISTORICAL LOAD

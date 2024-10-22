@@ -1,5 +1,5 @@
 
-
+'''
 import json
 
 # Load the JSON file into a dictionary
@@ -12,6 +12,7 @@ fixtures_url = {k: fixtures_url[k] for k in list(fixtures_url.keys())[:5]}
 
 # Now fixtures_url contains the dictionary loaded from the JSON file
 print(fixtures_url)
+'''
 '''
 
 import pandas as pd
@@ -32,3 +33,20 @@ df_ou= pd.merge(df_h2h, df_ou, on=['league','home_team', 'away_team', 'source'])
 print(df_ou.head())
 
 '''
+
+import pandas as pd
+
+df = pd.read_csv('HistoricalLoadRecords.csv')
+
+df = df.drop_duplicates(subset=['league', 'source', 'home_team', 'away_team'], keep='first')
+
+duplicates = (
+    df.groupby(['league', 'source', 'home_team', 'away_team'])
+    .size()  # Get the count of each group
+    .reset_index(name='count')  # Reset index to convert the series to a DataFrame with 'count' column
+    .query('count > 1')  # Filter for groups having count greater than 1
+)
+
+print(duplicates)
+
+df.to_csv('HistoricalLoadRecords_c.csv', index=False)

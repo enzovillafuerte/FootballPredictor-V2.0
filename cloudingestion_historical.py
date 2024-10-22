@@ -107,7 +107,7 @@ df6 = pd.read_csv('Predictions/OU_Predictions_09-30-2024.csv')
 df7 = pd.read_csv('Predictions/OU_Predictions_10-03-2024.csv')
 df8 = pd.read_csv('Predictions/OU_Predictions_10-04-2024.csv')
 df9 = pd.read_csv('Predictions/OU_Predictions_10-05-2024.csv')
-
+# df10 = 
 
 # Concatenatating the dataframes
 all_dfs = pd.concat([df1, df2, df3, df4, df5, df6, df7, df8, df9], ignore_index=True)
@@ -256,6 +256,9 @@ final_ou.columns = final_ou.columns.str.lower()
 
 # Changing the column names appropiately to match the pydantic model and the schema generation at supabase
 final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5', 'r+1.5': 'r_1_5', 'r+2.5':'r_2_5', 'rh+1.5':'r_home_1_5', 'ra+1.5':'r_away_1_5'}, inplace=True) ## Add the H2H later
+
+# remove duplicated records that may exist
+final_ou = final_ou.drop_duplicates(subset=['league', 'source', 'home_team', 'away_team'], keep='first')
 
 # Export into CSV
 final_ou.to_csv('HistoricalLoadRecords.csv', index=False)
