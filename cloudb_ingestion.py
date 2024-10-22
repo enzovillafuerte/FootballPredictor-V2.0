@@ -267,6 +267,9 @@ api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 # creating supabase instance
 supabase = create_client(project_url, api_key)
 
+
+#### ------------ INSERTION ------------
+
 # Defining function for insertion
 
 def insert_records(df, supabase):
@@ -287,6 +290,7 @@ def insert_records(df, supabase):
 # Inserting records
 insert_records(final_ou, supabase)
 
+#### ------------ UPDATING RECORDS IN BETS TABLE (after bets were published) ------------
 # Code for Updating Records - Upserting not working
 def update_records(df, supabase):
     if df.empty:
@@ -299,15 +303,21 @@ def update_records(df, supabase):
             'source': row['source'],
             'home_team': row['home_team'],
             'away_team': row['away_team'],
-            # Add other fields you want to update
-            'over_1_5': row['over_1_5'],
-            'over_2_5': row['over_2_5'],
-            'over_3_5': row['over_3_5'],
-            # Include other fields as necessary...
+            # Adding other fields for updating
+            'score': row['score'],
+            'g_h': row['g_h'],
+            'g_a': row['g_a'],
+            'total_goals': row['total_goals'],
+            'r_1_5': row['r_1_5'],
+            'r_2_5': row['r_2_5'],
+            'r_home_1_5': row['r_home_1_5'],
+            'r_away_1_5': row['r_away_1_5'],
+            'win':row['win']
+
         }
 
         # Update the record based on league, source, home_team, and away_team
-        executing = supabase.table('predictions_results_f')\
+        executing = supabase.table('predictions_bet')\
             .update(record_to_update)\
             .eq('league', row['league'])\
             .eq('source', row['source'])\
@@ -329,9 +339,8 @@ def update_records(df, supabase):
 # FINAL STEPS: INCLUDE ALL LEAGUES NOT ONLY PREMIER. FOLLOW METHODOLOGY FROM HISTORICAL LOAD
 # python cloudb_ingestion.py
 '''
-
-CREATE TABLE predictions_results_o (
-    match_id SERIAL PRIMARY KEY,  -- Auto-incrementing primary key
+CREATE TABLE predictions_results_f (
+    match_id SERIAL PRIMARY KEY,
     league VARCHAR(20) NOT NULL,
     source VARCHAR(10) NOT NULL,
     home_team VARCHAR(30) NOT NULL,
@@ -346,9 +355,6 @@ CREATE TABLE predictions_results_o (
     away_h2h FLOAT,
     xg FLOAT,
     score VARCHAR(10),
-    --xg_h FLOAT,
-    --xg_a FLOAT,
-    --actual_xg FLOAT
     g_h INT,
     g_a INT,
     total_goals INT,
@@ -357,6 +363,7 @@ CREATE TABLE predictions_results_o (
     r_home_1_5 FLOAT,
     r_away_1_5 FLOAT,
     win VARCHAR(5),
-    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Automatically populating the 
-)
+    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    -- UNIQUE (league, source, home_team, away_team)
+);
 '''

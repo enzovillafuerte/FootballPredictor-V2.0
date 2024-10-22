@@ -18,6 +18,9 @@ import warnings
 import time
 from scipy.stats import poisson
 from datetime import datetime
+from pydantic import BaseModel, condecimal, constr
+from typing import Optional
+from supabase import create_client, Client
 
 
 # Functions from Module created
@@ -601,28 +604,130 @@ df_ou.to_csv(output_path, index=False)
 output_path = os.path.join(output_dir, f"H2H_Predictions_Official.csv")
 df_h2h.to_csv(output_path, index=False)
 
-# Uploading to github
+# change column names to lowercase to avoid problems
+df_ou.columns = df_ou.columns.str.lower()
+df_h2h.columns = df_h2h.columns.str.lower()
 
-''' 
-To-Dos:
-    - save the file into a csv ******* DONE *******
-    - Update mapping for understat.com fixtures data
-    - Update leagues link for FBREF and Understat (if applicable)
-    - Count number of teams per league (so we can edit the loc section for fixtures) - ******* DONE *******
-    - Plan ahead on what to do with final dataset?
-        1. Stored and shared as a csv file? - THIS IS THE ONE TO GO FOR NOW
-        2. Automate Tableau Dashboards (Still a bit of manual process) - LESS PRIORITY
-        3. Automate sending message once it is done through office? - This one sounds cool and faster - TRY TO DO THIS ONE - https://www.youtube.com/watch?v=g_j6ILT-X0k
-    - Schedule jobs using CRON for Tuesday 12am and Thursday 12am.
-    - Start planning on the ideas to integrate actual odds data.
-    - PDF Reports (To be decided)
-    - Kelly formula (To be decided)
-    - Dashboards (To be decided)
-    - Some kind of descriptive analytics need to be done.- later in future
-        1. Challenge: Integrate with results to see whether the prediction was accurate.
-            - Potential Solution: Different program that takes last predictions and scrapes results from fixtures & scores to compare.
-            - Employ Scholz for Data Entry
-            - Might take a bit of time. Lower priority.
+# Consolidating the final dataframe
+final_ou = pd.merge(df_h2h, df_ou, on=['league','home_team', 'away_team', 'source'])
+
+#### ------------ LOADING INTO SUPABASE ------------
+
+# Handling in case there's null values. Changing to None just in case
+final_ou = final_ou.where(pd.notnull(final_ou), None)
+
+# Changing the column naming to lower case. Otherwise it might cause match errors with Supabase's schema definition
+final_ou.columns = final_ou.columns.str.lower()
+
+# Changing the column names appropiately to match the pydantic model and the schema generation at supabase
+final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)': 'over_3_5', 
+'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5',
+'home (%)':'home_h2h', 'draw (%)':'draw_h2h', 'away (%)':'away_h2h'}, inplace=True)
+
+# add columns as NULL
+final_ou[['score', 'g_h', 'g_a', 'total_goals', 'r_1_5', 'r_2_5', 'r_home_1_5', 'r_away_1_5', 'win' ]] = None
+
+class DataModel(BaseModel):
+    league: str
+    source: str
+    home_team: str
+    away_team: str
+    over_1_5: float
+    over_2_5: float
+    over_3_5: float
+    home_over_1_5: float
+    away_over_1_5: float
+    xg: Optional[float]  # Assuming this column could have missing values based on the subset
+    home_h2h: Optional[float]  # Assuming these columns are missing in the current subset but may be present in full
+    draw_h2h: Optional[float]
+    away_h2h: Optional[float]
+    score: Optional[str]
+    g_h: Optional[int]
+    g_a: Optional[int]
+    total_goals: Optional[int]
+    r_1_5: Optional[float]
+    r_2_5: Optional[float]
+    r_home_1_5: Optional[float]
+    r_away_1_5: Optional[float]
+    win: Optional[str]
+
+# Running the validation
+for x in final_ou.to_dict(orient="records"):
+    try:
+        DataModel(**x).dict()
+        print('Successful Validation')
+
+    except Exception as e:
+        print(e)
+        break
+
+print(final_ou)
+
+## DB Information in Whatsapp for security reasons
+project_url = 'https://qzyklxzvjikqnoqcjdvx.supabase.co'
+api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6eWtseHp2amlrcW5vcWNqZHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgxNTU4ODcsImV4cCI6MjA0MzczMTg4N30.2U_lTkLdbv3LFkWAIbF6HYIFyVF2NQkeXRM783nNagw'
+
+# creating supabase instance
+supabase = create_client(project_url, api_key)
+
+
+#### ------------ INSERTION ------------
+
+# Defining function for insertion
+
+def insert_records(df, supabase):
+
+    records = [
+        DataModel(**x).model_dump()
+        for x in df.to_dict(orient='records')
+    ]
+
+    # Upsert will work for inserting new rows and also update already existing ones based on primary key
+    # //// Table name as argument in function better ///
+    executing = supabase.table('predictions_bet').upsert(records).execute() #\
+            #.upsert(records, on_conflict=['league', 'source', 'home_team', 'away_team']).execute() # we can also do batch, but it will not be needed in this case'''
+    
+
+    print("Successful Insertion")
+
+# Inserting records
+insert_records(final_ou, supabase)
+
+# python ScraperScript.py
+
+'''
+Schema Creation:
+  /* ############### CREATING NEW TABLE FOR STORING BETTING PREDICTIONS */
+
+  DROP TABLE IF EXISTS predictions_bet;
+
+  CREATE TABLE predictions_bet (
+    match_id SERIAL PRIMARY KEY,
+    league VARCHAR(20) NOT NULL,
+    source VARCHAR(10) NOT NULL,
+    home_team VARCHAR(30) NOT NULL,
+    away_team VARCHAR(30) NOT NULL,
+    over_1_5 FLOAT,
+    over_2_5 FLOAT,
+    over_3_5 FLOAT,
+    home_over_1_5 FLOAT,
+    away_over_1_5 FLOAT,
+    home_h2h FLOAT,
+    draw_h2h FLOAT,
+    away_h2h FLOAT,
+    xg FLOAT,
+    score VARCHAR(10),
+    g_h INT,
+    g_a INT,
+    total_goals INT,
+    r_1_5 FLOAT,
+    r_2_5 FLOAT,
+    r_home_1_5 FLOAT,
+    r_away_1_5 FLOAT,
+    win VARCHAR(5),
+    ingestion_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    -- UNIQUE (league, source, home_team, away_team)
+);
 '''
 
 '''
