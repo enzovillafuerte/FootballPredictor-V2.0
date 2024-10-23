@@ -539,7 +539,7 @@ for league, df in dfs.items():
                 result_h2h = fbref_predict_game_winner_Goals(home_team, away_team, df)
                 predictions_h2h.append({
                     'League': league,
-                    'Source': 'fbxg',
+                    'Source': 'fbxg_n',
                     'home_team': home_team,
                     'away_team': away_team,
                     'Home (%)': result_h2h['home_win_prob'],
