@@ -304,6 +304,7 @@ def update_records(df, supabase):
             'home_team': row['home_team'],
             'away_team': row['away_team'],
             # Adding other fields for updating
+            # we are interested only in updating the results of our predictions
             'score': row['score'],
             'g_h': row['g_h'],
             'g_a': row['g_a'],
