@@ -20,8 +20,12 @@ import time
 
 # Sample of last week's data (Should be official, but we'll use last week's since I ran the program today in the morning)
 
-df_ou = pd.read_csv('Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
-df_h2h = pd.read_csv('Predictions/OU_Predictions_Official.csv') # - uncomment when ready
+# Just for running the update
+df_ou = pd.read_csv('Predictions/H2H_Predictions_10-22-2024.csv')
+df_h2h = pd.read_csv('Predictions/OU_Predictions_10-22-2024.csv')
+
+# df_ou = pd.read_csv('Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
+# df_h2h = pd.read_csv('Predictions/OU_Predictions_Official.csv') # - uncomment when ready
 
 # change column names to lowercase to avoid problems
 df_ou.columns = df_ou.columns.str.lower()
@@ -261,8 +265,8 @@ print(final_ou)
 
 
 ## DB Information in Whatsapp for security reasons
-project_url = ''
-api_key = ''
+project_url = 'https://qzyklxzvjikqnoqcjdvx.supabase.co'
+api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6eWtseHp2amlrcW5vcWNqZHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgxNTU4ODcsImV4cCI6MjA0MzczMTg4N30.2U_lTkLdbv3LFkWAIbF6HYIFyVF2NQkeXRM783nNagw'
 
 # creating supabase instance
 supabase = create_client(project_url, api_key)
@@ -271,7 +275,7 @@ supabase = create_client(project_url, api_key)
 #### ------------ INSERTION ------------
 
 # Defining function for insertion
-
+'''
 def insert_records(df, supabase):
 
     records = [
@@ -282,14 +286,14 @@ def insert_records(df, supabase):
     # Upsert will work for inserting new rows and also update already existing ones based on primary key
     # //// Table name as argument in function better ///
     executing = supabase.table('predictions_results_f').upsert(records).execute() #\
-            #.upsert(records, on_conflict=['league', 'source', 'home_team', 'away_team']).execute() # we can also do batch, but it will not be needed in this case'''
+            #.upsert(records, on_conflict=['league', 'source', 'home_team', 'away_team']).execute() # we can also do batch, but it will not be needed in this case
     
 
     print("Successful Insertion")
 
 # Inserting records
 insert_records(final_ou, supabase)
-
+'''
 #### ------------ UPDATING RECORDS IN BETS TABLE (after bets were published) ------------
 # Code for Updating Records - Upserting not working
 def update_records(df, supabase):
@@ -334,7 +338,7 @@ def update_records(df, supabase):
         #    print(f"Error updating record: {executing.error}, Status: {executing.status_code}")
 
 # Updating records
-# update_records(final_ou, supabase) # WORKING!
+update_records(final_ou, supabase) # WORKING!
 
 
 # FINAL STEPS: INCLUDE ALL LEAGUES NOT ONLY PREMIER. FOLLOW METHODOLOGY FROM HISTORICAL LOAD
