@@ -99,6 +99,8 @@ with open(filename, 'w') as json_file:
 
 # 1. loading datasets
 df1 = pd.read_csv('Predictions/OU_Predictions_09-01-2024.csv')
+
+# Adding Date Column - Perhaps not needed?
 df2 = pd.read_csv('Predictions/OU_Predictions_09-02-2024.csv')
 df3 = pd.read_csv('Predictions/OU_Predictions_09-12-2024.csv')
 df4 = pd.read_csv('Predictions/OU_Predictions_09-17-2024.csv')
@@ -107,7 +109,7 @@ df6 = pd.read_csv('Predictions/OU_Predictions_09-30-2024.csv')
 df7 = pd.read_csv('Predictions/OU_Predictions_10-03-2024.csv')
 df8 = pd.read_csv('Predictions/OU_Predictions_10-04-2024.csv')
 df9 = pd.read_csv('Predictions/OU_Predictions_10-05-2024.csv')
-# df10 = 
+
 
 # Concatenatating the dataframes
 all_dfs = pd.concat([df1, df2, df3, df4, df5, df6, df7, df8, df9], ignore_index=True)
