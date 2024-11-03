@@ -666,8 +666,8 @@ for x in final_ou.to_dict(orient="records"):
 print(final_ou)
 
 ## DB Information in Whatsapp for security reasons
-project_url = 'https://qzyklxzvjikqnoqcjdvx.supabase.co'
-api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6eWtseHp2amlrcW5vcWNqZHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgxNTU4ODcsImV4cCI6MjA0MzczMTg4N30.2U_lTkLdbv3LFkWAIbF6HYIFyVF2NQkeXRM783nNagw'
+project_url = ''
+api_key = ''
 
 # creating supabase instance
 supabase = create_client(project_url, api_key)
