@@ -261,7 +261,7 @@ print(final_ou)
 
 
 
-## DB Information in Whatsapp for security reasons
+## DB Information in WAAP for security reasons
 project_url = ''
 api_key = ''
 
