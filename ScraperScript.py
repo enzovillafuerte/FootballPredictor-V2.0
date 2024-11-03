@@ -624,6 +624,8 @@ final_ou.rename(columns={'+1.5(%)': 'over_1_5', '+2.5(%)':'over_2_5', '+3.5(%)':
 'h+1.5(%)':'home_over_1_5', 'a+1.5(%)':'away_over_1_5',
 'home (%)':'home_h2h', 'draw (%)':'draw_h2h', 'away (%)':'away_h2h'}, inplace=True)
 
+
+
 # add columns as NULL
 final_ou[['score', 'g_h', 'g_a', 'total_goals', 'r_1_5', 'r_2_5', 'r_home_1_5', 'r_away_1_5', 'win' ]] = None
 
