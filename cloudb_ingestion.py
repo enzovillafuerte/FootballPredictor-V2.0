@@ -114,7 +114,7 @@ def past_fixtures_scraper(url):
     # df['actual_xg'] = df['xg_h'] + df['xg_a']
     
     # retrieving only last 20 games for efficiency - Change it to 10 later
-    return df.tail(12)
+    return df.tail(20)
 
 
 # change this to scrape for all leagues
@@ -201,9 +201,6 @@ final_ou.loc[final_ou['g_h'] == final_ou['g_a'], ['WIN']] = 'E'
 
 # Displaying the final dataframe
 #print(final_ou)
-
-# Next steps: Merge H2H Home(%), Draw (%), Away(%) into final_ou 
-# create schema and load into supabase
 
 
 
@@ -295,6 +292,30 @@ def insert_records(df, supabase):
 insert_records(final_ou, supabase)
 '''
 #### ------------ UPDATING RECORDS IN BETS TABLE (after bets were published) ------------
+
+# Reverse Mapping - So names are consistent in the database
+# Will allow the update to perform the update based on home_team and away_team
+# Not updating the values when Atlético Madrid != Atletico Madrid
+
+reverse_mapping = {
+    # La Liga
+    'Alavés': 'Alaves', 'Valladolid': 'Real Valladolid', 'Betis': 'Real Betis', 'Leganés': 'Leganes', 'Atlético Madrid': 'Atletico Madrid',
+    # EPL
+    'Leicester City': 'Leicester', 'Wolves': 'Wolverhampton Wanderers', 'Ipswich Town': 'Ipswich', 'Manchester Utd': 'Manchester United', "Nott'ham Forest": 'Nottingham Forest',
+    # Bundesliga
+    'Heidenheim': 'FC Heidenheim', 'Eint Frankfurt': 'Eintracht Frankfurt', 'Leverkusen': 'Bayer Leverkusen', 'Stuttgart': 'VfB Stuttgart', 
+    'Gladbach': 'Borussia M.Gladbach', 'Dortmund': 'Borussia Dortmund', 'RB Leipzig': 'RasenBallsport Leipzig',
+    # Serie A
+    'Hellas Verona': 'Verona', 'Parma': 'Parma Calcio 1913', 'Milan': 'AC Milan',
+    # Ligue 1
+    'Saint-Étienne': 'Saint-Etienne', 'Paris S-G': 'Paris Saint Germain'
+}
+
+# Apply Reverse Mapping
+final_ou = final_ou.replace({"home_team":reverse_mapping, "away_team":reverse_mapping})
+
+
+
 # Code for Updating Records - Upserting not working
 def update_records(df, supabase):
     if df.empty:
