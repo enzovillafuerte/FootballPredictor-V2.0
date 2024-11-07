@@ -21,11 +21,11 @@ import time
 # Sample of last week's data (Should be official, but we'll use last week's since I ran the program today in the morning)
 
 # Just for running the update
-df_ou = pd.read_csv('Predictions/H2H_Predictions_10-22-2024.csv')
-df_h2h = pd.read_csv('Predictions/OU_Predictions_10-22-2024.csv')
+# df_ou = pd.read_csv('Predictions/H2H_Predictions_10-22-2024.csv')
+# df_h2h = pd.read_csv('Predictions/OU_Predictions_10-22-2024.csv')
 
-# df_ou = pd.read_csv('Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
-# df_h2h = pd.read_csv('Predictions/OU_Predictions_Official.csv') # - uncomment when ready
+df_ou = pd.read_csv('Predictions/H2H_Predictions_Official.csv') # - uncomment when ready
+df_h2h = pd.read_csv('Predictions/OU_Predictions_Official.csv') # - uncomment when ready
 
 # change column names to lowercase to avoid problems
 df_ou.columns = df_ou.columns.str.lower()
@@ -272,7 +272,7 @@ supabase = create_client(project_url, api_key)
 #### ------------ INSERTION ------------
 
 # Defining function for insertion
-'''
+
 def insert_records(df, supabase):
 
     records = [
@@ -290,7 +290,7 @@ def insert_records(df, supabase):
 
 # Inserting records
 insert_records(final_ou, supabase)
-'''
+
 #### ------------ UPDATING RECORDS IN BETS TABLE (after bets were published) ------------
 
 # Reverse Mapping - So names are consistent in the database
