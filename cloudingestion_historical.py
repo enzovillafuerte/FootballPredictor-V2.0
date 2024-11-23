@@ -110,6 +110,7 @@ df7 = pd.read_csv('Predictions/OU_Predictions_10-03-2024.csv')
 df8 = pd.read_csv('Predictions/OU_Predictions_10-04-2024.csv')
 df9 = pd.read_csv('Predictions/OU_Predictions_10-05-2024.csv')
 
+# For Main ETL Ignore the datasets '11-23-2024.csv' - didn't run the program in time
 
 # Concatenatating the dataframes
 all_dfs = pd.concat([df1, df2, df3, df4, df5, df6, df7, df8, df9], ignore_index=True)
